@@ -14,7 +14,7 @@ Die Infrastruktur ist so konzipiert, dass alle Dienste isoliert in Docker-Contai
 ---
 
 ## Docker-Netzwerk & Kommunikation
-Damit der Reverse Proxy den Datenverkehr an die Anwendungen weiterleiten kann, ohne dass alle Container ihre Ports direkt an das Host-System freigeben müssen, nutzen die Container dedizierte Docker-Netzwerke (`bridge`). 
+Damit der Reverse Proxy den Datenverkehr an die Anwendungen weiterleiten kann, ohne dass alle Container ihre Ports direkt an das Host-System freigeben müssen, nutzen die Container dedizierte Docker-Netzwerke (`bridge`).
 
 ---
 
@@ -100,9 +100,6 @@ Access Control: Unmittelbar nach dem Deployment wurden sämtliche Standard-Admin
 Port-Absicherung: Nur die Ports 80 (HTTP) und 443 (HTTPS) sowie der administrative NPM-Port 81 sind nach außen hin geöffnet. Die Anwendungen selbst (Vaultwarden, Nextcloud) kommunizieren geschützt hinter dem Proxy.
 
 Troubleshooting & Learnings (DevOps Skills)
-ACME-Validierung bei Let's Encrypt: Erste Zertifikatsanfragen schlugen fehl, da der ACME-Server Standard-Dummy-E-Mail-Adressen (admin@example.com) blockiert. Die Fehleranalyse erfolgte direkt über die Docker-Container-Logs (docker logs). Das Problem wurde durch die Konfiguration einer validen Mail-Struktur im globalen Administrator-Profil behoben.
+ACME-Validierung bei Let's Encrypt: Erste Zertifikatsanfragen schlugen fehl, da der ACME-Server Standard-Dummy-E-Mail-Adressen blockiert. Die Fehleranalyse erfolgte direkt über die Docker-Container-Logs (docker logs). Das Problem wurde durch die Konfiguration einer validen Mail-Struktur im globalen Administrator-Profil behoben.
 
 DNS-Routing: Konfiguration von spezifischen A-Records (passworte.*, cloud.*) im Domain-Management, um Subdomains gezielt auf die Server-IP aufzulösen, ohne bestehende Produktivsysteme auf der Hauptdomain zu beeinträchtigen.
-
-
-
