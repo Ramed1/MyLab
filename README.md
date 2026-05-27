@@ -37,10 +37,13 @@ services:
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
+
+```
+
 2. Passwort-Tresor (Vaultwarden)
 Sichere Passwort-Instanz, die intern auf Port 8080 lauscht und vom Proxy per SSL geschützt wird.
 
-YAML
+```YAML
 version: '3.8'
 services:
   vaultwarden:
@@ -53,10 +56,11 @@ services:
       - ./vw-data:/data
     ports:
       - '8080:80'
+```
 3. Cloud-Zentrale & Relationale Datenbank (Nextcloud & MariaDB)
 Die Nextcloud-Anwendung läuft isoliert und kommuniziert intern direkt mit dem MariaDB-Datenbank-Container.
 
-YAML
+```YAML
 version: '3.8'
 
 services:
@@ -92,6 +96,7 @@ services:
 volumes:
   db_data:
   nextcloud_data:
+```
 Security Hardening & Infrastruktur-Schutz
 Daten-Persistenz: Kritische Daten (Anwendungsdaten und Datenbanken) werden über benannte Docker-Volumes (volumes) und lokale Verzeichnisse auf dem Host-System gesichert, um Datenverlust bei Container-Updates zu verhindern.
 
