@@ -88,7 +88,7 @@ services:
 ```
 
 ### 3. Cloud-Zentrale (Nextcloud)
-Die Nextcloud-Anwendung läuft in einem autarken Container und nutzt für maximale Effizienz im Labor-Setup die integrierte SQLite-Datenbankstruktur.
+Die Nextcloud-Anwendung läuft in einem Container und nutzt für maximale Effizienz im die integrierte SQLite-Datenbankstruktur.
 
 ```yaml
 version: '3.8'
@@ -103,15 +103,62 @@ services:
       - ./nextcloud_data:/var/www/html
 ```
 
----
 
-## Security Hardening & Infrastruktur-Schutz
-* **Daten-Persistenz:** Kritische Anwendungsdaten werden über lokale Verzeichnisse auf dem Host-System gesichert, um Datenverlust bei Container-Updates zu verhindern.
-* **Access Control:** Unmittelbar nach dem Deployment wurden sämtliche Standard-Admin-Credentials der Weboberflächen modifiziert und gehärtet.
-* **Port-Absicherung:** Nur die Ports `80` (HTTP) und `443` (HTTPS) sowie der administrative NPM-Port `81` sind nach außen hin geöffnet. Die Anwendungen selbst kommunizieren geschützt hinter dem Proxy.
+### 3. Backup einrichten 
+Um vor Datencrashes sicher zu sein ist ein backup notwendig
 
----
 
-## Troubleshooting & Learnings (DevOps Skills)
-* **ACME-Validierung bei Let's Encrypt:** Erste Zertifikatsanfragen schlugen fehl, da der ACME-Server Standard-Dummy-E-Mail-Adressen (`admin@example.com`) blockiert. Die Fehleranalyse erfolgte direkt über die Docker-Container-Logs (`docker logs`). Das Problem wurde durch die Konfiguration einer validen Mail-Struktur im globalen Administrator-Profil behoben.
-* **DNS-Routing:** Konfiguration von spezifischen A-Records (`passworte.*`, `cloud.*`) im Domain-Management, um Subdomains gezielt auf die Server-IP aufzulösen, ohne bestehende Produktivsysteme auf der Hauptdomain zu beeinträchtigen.
+```bash
+#!/bin/bash
+
+# Das Skript muss als root/sudo ausgeführt werden
+if [ "$EUID" -ne 0 ]; then
+  echo "Bitte starte das Skript mit: sudo $0"
+  exit 1
+fi
+
+# Variablen definieren (Backup-Ordner außerhalb von SOURCE_DIR, um tar-Fehler zu vermeiden)
+BACKUP_DIR="/home/$SUDO_USER/docker_backups"
+SOURCE_DIR="/home/$SUDO_USER/docker"
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+BACKUP_NAME="docker_backup_$TIMESTAMP.tar.gz"
+
+# Erstelle den Backup-Ordner, falls er noch nicht existiert
+mkdir -p "$BACKUP_DIR"
+chown "$SUDO_USER:$SUDO_USER" "$BACKUP_DIR"
+
+echo "=== Starte Backup-Prozess: $(date) ==="
+
+# 1. Alle laufenden Docker-Projekte in den Unterordnern stoppen
+echo "Suche und stoppe alle Docker-Container..."
+find "$SOURCE_DIR" -name "docker-compose.yml" | while read -r compose_file; do
+    echo "Stoppe Projekt in: $(dirname "$compose_file")"
+    cd "$(dirname "$compose_file")" && docker compose down
+done
+
+# 2. Backup erstellen
+echo "Erstelle komprimiertes Archiv von $SOURCE_DIR..."
+tar -czf "$BACKUP_DIR/$BACKUP_NAME" -C "$SOURCE_DIR" .
+
+# 3. Alle Docker-Projekte wieder hochfahren
+echo "Suche und starte alle Docker-Container neu..."
+find "$SOURCE_DIR" -name "docker-compose.yml" | while read -r compose_file; do
+    echo "Starte Projekt in: $(dirname "$compose_file")"
+    cd "$(dirname "$compose_file")" && docker compose up -d
+done
+
+# 4. Alte Backups löschen (älter als 7 Tage)
+echo "Räume alte Backups auf (älter als 7 Tage)..."
+find "$BACKUP_DIR" -type f -name "docker_backup_*.tar.gz" -mtime +7 -delete
+
+# Rechte für den Backup-Ordner korrigieren
+chown -R "$SUDO_USER:$SUDO_USER" "$BACKUP_DIR"
+
+echo "=== Backup erfolgreich abgeschlossen: $(date) ==="
+
+```bash
+
+### 3. Automatisierung einrichten
+Damit wir nicht das Backup jedesmal selber manuel starten müssen, wird es automatisiert
+
+0 3 * * * /home/ramed/docker/backup.sh > /dev/null 2>&1
