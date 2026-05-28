@@ -161,4 +161,8 @@ echo "=== Backup erfolgreich abgeschlossen: $(date) ==="
 ### 3. Automatisierung einrichten
 Damit wir nicht das Backup jedesmal selber manuel starten müssen, wird es automatisiert
 
+```bash
+
 0 3 * * * /home/ramed/docker/backup.sh > /dev/null 2>&1
+
+```bash
